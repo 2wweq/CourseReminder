@@ -1,0 +1,57 @@
+
+name: Build CourseReminder
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/CourseReminder.sln
+
+      - name: Build
+        run: dotnet build src/CourseReminder.sln -c Release --no-restore
+
+      - name: Publish Windows x64
+        run: >
+          dotnet publish src/CourseReminder/CourseReminder.csproj
+          -c Release
+          -r win-x64
+          --self-contained false
+          --no-restore
+          -o publish
+
+      - name: Package ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish/* `
+            -DestinationPath CourseReminder-win-x64.zip
+
+      - name: Calculate SHA256
+        shell: pwsh
+        run: |
+          Get-FileHash CourseReminder-win-x64.zip -Algorithm SHA256 |
+            Format-List
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CourseReminder-win-x64
+          path: CourseReminder-win-x64.zip
+          retention-days: 30
