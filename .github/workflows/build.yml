@@ -1,4 +1,3 @@
-
 name: Build CourseReminder
 
 on:
@@ -39,6 +38,11 @@ jobs:
           --self-contained false
           -o publish
 
+      - name: Copy 使用说明 to package
+        shell: pwsh
+        run: |
+          Copy-Item -Path "docs/使用说明.md" -Destination "publish/使用说明.md" -Force
+
       - name: Package ZIP
         shell: pwsh
         run: |
@@ -50,8 +54,10 @@ jobs:
 
           $zipName = "CourseReminder-$version-win-x64.zip"
 
-          Compress-Archive -Path publish/* `
-            -DestinationPath $zipName
+          # 解压后应是一个整齐的 CourseReminder 文件夹，而不是散落的 exe/dll
+          New-Item -ItemType Directory -Path "staging/CourseReminder" -Force | Out-Null
+          Copy-Item -Path "publish/*" -Destination "staging/CourseReminder" -Recurse -Force
+          Compress-Archive -Path "staging/CourseReminder" -DestinationPath $zipName -Force
 
           Write-Host "Package created: $zipName"
 
