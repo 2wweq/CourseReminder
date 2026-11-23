@@ -9,6 +9,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -39,18 +42,47 @@ jobs:
       - name: Package ZIP
         shell: pwsh
         run: |
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $version = $env:GITHUB_REF_NAME
+          } else {
+            $version = "dev"
+          }
+
+          $zipName = "CourseReminder-$version-win-x64.zip"
+
           Compress-Archive -Path publish/* `
-            -DestinationPath CourseReminder-win-x64.zip
+            -DestinationPath $zipName
+
+          Write-Host "Package created: $zipName"
 
       - name: Calculate SHA256
         shell: pwsh
         run: |
-          Get-FileHash CourseReminder-win-x64.zip -Algorithm SHA256 |
-            Format-List
+          $zip = Get-ChildItem -Filter "CourseReminder-*-win-x64.zip" |
+            Select-Object -First 1
+
+          $hash = (Get-FileHash $zip.FullName -Algorithm SHA256).Hash.ToLower()
+
+          "$hash  $($zip.Name)" |
+            Out-File SHA256SUMS.txt -Encoding ascii
+
+          Get-Content SHA256SUMS.txt
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: CourseReminder-win-x64
-          path: CourseReminder-win-x64.zip
+          path: |
+            CourseReminder-*-win-x64.zip
+            SHA256SUMS.txt
           retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            CourseReminder-*-win-x64.zip
+            SHA256SUMS.txt
+          generate_release_notes: true
+          fail_on_unmatched_files: true
