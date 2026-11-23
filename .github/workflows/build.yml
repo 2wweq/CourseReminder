@@ -34,7 +34,6 @@ jobs:
           -c Release
           -r win-x64
           --self-contained false
-          --no-restore
           -o publish
 
       - name: Package ZIP
