@@ -54,7 +54,7 @@
 需要 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。
 
 ```powershell
-git clone https://github.com/<your-name>/CourseReminder.git
+git clone https://github.com/2wweq/CourseReminder.git
 cd CourseReminder
 dotnet build src/CourseReminder.sln -c Release
 
